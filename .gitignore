@@ -35,4 +35,4 @@
 out/*
 .vs/*
 build/*
-cliente-impresion/*
+servidor-impresion-env/*
