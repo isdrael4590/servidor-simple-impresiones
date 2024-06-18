@@ -1,7 +1,0 @@
-[requires]
-cpprestsdk/2.10.19
-[generators]
-CMakeDeps
-CMakeToolchain
-[layout]
-cmake_layout

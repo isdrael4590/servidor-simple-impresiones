@@ -36,3 +36,6 @@ out/*
 .vs/*
 build/*
 servidor-impresion-env/*
+CMakeUserPresets.json
+ConanPresets.json
+
