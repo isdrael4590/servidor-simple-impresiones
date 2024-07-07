@@ -16,7 +16,7 @@ using namespace utility;
 const std::string nombre_archivo = "output.png";
 const std::string comando = "mspaint /pt " + nombre_archivo;
 
-//TODO: Chequear las impresoras disponibles, para solo aceptar las impresas de etiquetas
+//TODO: Chequear las impresoras disponibles
 
 void handle_print_request(http_request request) {
 	if (request.headers().content_type() != U("text/plain")) {
