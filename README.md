@@ -7,11 +7,21 @@
 - [CPPRest](https://microsoft.github.io/cpprestsdk/index.html)
 - [CMake](https://cmake.org/) >= 3.8
 
+## Hardware
+
+- Impresora Zebra [ZD421](https://www.zebra.com/la/es/support-downloads/printers/desktop/zd421.html)
+
 ### Desarrollo
 
 - [Visual Studio C++ Community 2022](https://visualstudio.microsoft.com/vs/community/)
 
-## Instalación
+## Instrucciones
+
+- Descargue el [driver](https://www.zebra.com/la/es/support-downloads/printers/desktop/zd421.html) de la impresora Zebra a su disposición.
+- Instalelo en su computador y seleccione que la conexión sea por USB
+- Asegúrese que su impresora se encuentre encendidad y conectada.
+
+## Para programar
 
 ### Primera vez
 

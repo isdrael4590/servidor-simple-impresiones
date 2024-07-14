@@ -11,8 +11,14 @@ endif()
 
 project ("servidor-simple-impresiones")
 
-# CPP Rest
+# CPP Rest for receiving the images
 find_package(cpprestsdk REQUIRED)
+
+# LibUSB for usb discovery
+find_package(libusb)
+
+# spdlog for Logging
+find_package(spdlog REQUIRED)
 
 # Include sub-projects.
 add_subdirectory ("src")
