@@ -2,6 +2,7 @@
 #include "main.h"
 #include "logger.h"
 #include "check_printer.h"
+#include <spdlog/spdlog.h>
 
 using namespace web;
 using namespace web::http;
@@ -107,7 +108,6 @@ void handle_print_request(http_request request) {
 
 			spdlog::info("Imagen guardada como {}", nombre_archivo);
 			std::string nombre_impresora = findZebraPrinter();
-			std::cout << nombre_impresora << std::endl;
 			if (!nombre_impresora.empty()) {
 				bool status = printImageToPrinter(nombre_impresora, nombre_archivo);
 				if (status) {
@@ -141,8 +141,8 @@ void handle_print_request(http_request request) {
 }
 
 int main() {
+	Logger::init();
 	GdiplusInitializer gdiplusInitializer;
-	rotate_spdlog();
 	uri_builder uri(U("http://*:3000")); // Listen on all available network interfaces
 	auto addr = uri.to_uri().to_string();
 	http_listener listener(addr);
