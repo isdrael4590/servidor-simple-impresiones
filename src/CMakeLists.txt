@@ -11,6 +11,8 @@ target_precompile_headers(servidor-simple-impresiones PUBLIC "pch.h")
 target_link_libraries(servidor-simple-impresiones PRIVATE cpprestsdk::cpprest)
 target_link_libraries(servidor-simple-impresiones PRIVATE libusb::libusb)
 target_link_libraries(servidor-simple-impresiones PRIVATE spdlog::spdlog)
+target_link_libraries(servidor-simple-impresiones PRIVATE opencv::opencv)
+
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET servidor-simple-impresiones PROPERTY CXX_STANDARD 20)

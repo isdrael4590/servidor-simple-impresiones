@@ -11,6 +11,9 @@ endif()
 
 project ("servidor-simple-impresiones")
 
+# Library to process image files
+find_package(OpenCV)
+
 # CPP Rest for receiving the images
 find_package(cpprestsdk REQUIRED)
 

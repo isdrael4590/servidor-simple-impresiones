@@ -41,4 +41,8 @@
 - Crear una nueva regla en el Firewall de Windows
   - Seleccionar la opción `puerto`
     - Añadir el puerto `3000`
-    - Permitir la conexión y añadir un nombre adeciadp
+    - Permitir la conexión y añadir un nombre adecuado
+    - Seleccionar el ancho y alto de la etiqueta y modificar la velocidad de impresión a conveniencia
+
+
+    https://supportcommunity.zebra.com/s/article/000020654?language=en_US

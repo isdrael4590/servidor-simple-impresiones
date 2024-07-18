@@ -9,9 +9,78 @@ using namespace web::http::experimental::listener;
 using namespace utility;
 
 const std::string nombre_archivo = "output.png";
-const std::string comando = "mspaint /pt " + nombre_archivo;
 
-//TODO: Chequear las impresoras disponibles, para solo aceptar las impresas de etiquetas
+libusb_device_handle* handle = nullptr;
+
+
+// Function to encode image to ZPL
+std::string imageToZpl(const cv::Mat& img) {
+	std::ostringstream zpl;
+	int width = img.cols;
+	int height = img.rows;
+	zpl << "^XA^FO50,50^GFA," << width * height / 8 << "," << width * height / 8 << "," << width / 8 << ",";
+
+	for (int y = 0; y < height; ++y) {
+		for (int x = 0; x < width; x += 8) {
+			unsigned char byte = 0;
+			for (int bit = 0; bit < 8; ++bit) {
+				if (x + bit < width) {
+					unsigned char pixel = img.at<uchar>(y, x + bit);
+					if (pixel < 128) {
+						byte |= (1 << (7 - bit));
+					}
+				}
+			}
+			zpl << std::hex << std::uppercase << (byte < 16 ? "0" : "") << (int)byte;
+		}
+	}
+
+	zpl << "^FS^XZ";
+	return zpl.str();
+}
+
+// Function to send ZPL to the printer
+bool printZplToPrinter(const std::string& printerName, const std::string& zpl) {
+	HANDLE hPrinter;
+	DOC_INFO_1 docInfo;
+	DWORD dwBytesWritten;
+
+	if (!OpenPrinter(const_cast<LPSTR>(printerName.c_str()), &hPrinter, NULL)) {
+		spdlog::error("Failed to open printer: {}",printerName);
+		return false;
+	}
+
+	docInfo.pDocName = const_cast<LPSTR>("ZPL Document");
+	docInfo.pOutputFile = NULL;
+	docInfo.pDatatype = const_cast<LPSTR>("RAW");
+
+	if (StartDocPrinter(hPrinter, 1, (LPBYTE)&docInfo) == 0) {
+		spdlog::error("Failed to start document on printer: {}", printerName);
+		ClosePrinter(hPrinter);
+		return false;
+	}
+
+	if (StartPagePrinter(hPrinter) == 0) {
+		spdlog::error("Failed to start page on printer: {}", printerName);
+		EndDocPrinter(hPrinter);
+		ClosePrinter(hPrinter);
+		return false;
+	}
+
+	if (!WritePrinter(hPrinter, (LPVOID)zpl.c_str(), zpl.size(), &dwBytesWritten)) {
+		spdlog::error("Failed to write to printer: {}", printerName);
+		EndPagePrinter(hPrinter);
+		EndDocPrinter(hPrinter);
+		ClosePrinter(hPrinter);
+		return false;
+	}
+
+	EndPagePrinter(hPrinter);
+	EndDocPrinter(hPrinter);
+	ClosePrinter(hPrinter);
+
+	return true;
+}
 
 void handle_print_request(http_request request) {
 	if (request.headers().content_type() != U("text/plain")) {
@@ -31,10 +100,18 @@ void handle_print_request(http_request request) {
 			out_file.close();
 
 			spdlog::info("Imagen guardada como {}", nombre_archivo);
-			if (is_zebra_connected()) {
+			std::string nombre_impresora = findZebraPrinter();
+			std::cout << nombre_impresora << std::endl;
+			if (!nombre_impresora.empty()) {
 				// Imprime imagen 
-				int status_code = system(comando.c_str());
-				if (status_code == 0) {
+				cv::Mat img = cv::imread(nombre_archivo, cv::IMREAD_GRAYSCALE);
+				if (img.empty()) {
+					spdlog::warn("Error al leer la imágen");
+				}
+
+				std::string zpl = imageToZpl(img);
+				bool status = printZplToPrinter(nombre_impresora, zpl);
+				if (status) {
 					//Elimina la imagen
 					if (std::filesystem::remove(nombre_archivo))
 						spdlog::warn("Imagen {} eliminada.", nombre_archivo);
@@ -59,7 +136,7 @@ void handle_print_request(http_request request) {
 				t.get();
 			}
 			catch (const std::exception& e) {
-				ucout << U("Error exterbi: ") << e.what() << std::endl;
+				ucout << U("Error externo: ") << e.what() << std::endl;
 			}
 			});
 }
