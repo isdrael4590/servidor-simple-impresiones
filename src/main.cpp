@@ -8,79 +8,85 @@ using namespace web::http;
 using namespace web::http::experimental::listener;
 using namespace utility;
 
+#pragma comment(lib, "setupapi.lib")
+#pragma comment(lib, "gdiplus.lib")
+
+using namespace Gdiplus;
+
+// Initialize GDI+
+class GdiplusInitializer {
+public:
+	GdiplusInitializer() {
+		GdiplusStartupInput gdiplusStartupInput;
+		GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
+	}
+	~GdiplusInitializer() {
+		GdiplusShutdown(gdiplusToken);
+	}
+private:
+	ULONG_PTR gdiplusToken;
+};
+
 const std::string nombre_archivo = "output.png";
 
-libusb_device_handle* handle = nullptr;
+// Function to send image to the printer
+bool printImageToPrinter(const std::string& printerName, const std::string& imagePath) {
+	// Initialize GDI+.
+	GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
-
-// Function to encode image to ZPL
-std::string imageToZpl(const cv::Mat& img) {
-	std::ostringstream zpl;
-	int width = img.cols;
-	int height = img.rows;
-	zpl << "^XA^FO50,50^GFA," << width * height / 8 << "," << width * height / 8 << "," << width / 8 << ",";
-
-	for (int y = 0; y < height; ++y) {
-		for (int x = 0; x < width; x += 8) {
-			unsigned char byte = 0;
-			for (int bit = 0; bit < 8; ++bit) {
-				if (x + bit < width) {
-					unsigned char pixel = img.at<uchar>(y, x + bit);
-					if (pixel < 128) {
-						byte |= (1 << (7 - bit));
-					}
-				}
-			}
-			zpl << std::hex << std::uppercase << (byte < 16 ? "0" : "") << (int)byte;
-		}
-	}
-
-	zpl << "^FS^XZ";
-	return zpl.str();
-}
-
-// Function to send ZPL to the printer
-bool printZplToPrinter(const std::string& printerName, const std::string& zpl) {
 	HANDLE hPrinter;
-	DOC_INFO_1 docInfo;
 	DWORD dwBytesWritten;
 
 	if (!OpenPrinter(const_cast<LPSTR>(printerName.c_str()), &hPrinter, NULL)) {
-		spdlog::error("Failed to open printer: {}",printerName);
+		std::cerr << "Failed to open printer: " << printerName << std::endl;
 		return false;
 	}
 
-	docInfo.pDocName = const_cast<LPSTR>("ZPL Document");
-	docInfo.pOutputFile = NULL;
-	docInfo.pDatatype = const_cast<LPSTR>("RAW");
+	DOCINFO docInfo;
+	ZeroMemory(&docInfo, sizeof(docInfo));
+	docInfo.cbSize = sizeof(docInfo);
+	docInfo.lpszDocName = "GdiplusPrint";
 
-	if (StartDocPrinter(hPrinter, 1, (LPBYTE)&docInfo) == 0) {
-		spdlog::error("Failed to start document on printer: {}", printerName);
-		ClosePrinter(hPrinter);
-		return false;
-	}
-
-	if (StartPagePrinter(hPrinter) == 0) {
-		spdlog::error("Failed to start page on printer: {}", printerName);
-		EndDocPrinter(hPrinter);
-		ClosePrinter(hPrinter);
-		return false;
-	}
-
-	if (!WritePrinter(hPrinter, (LPVOID)zpl.c_str(), zpl.size(), &dwBytesWritten)) {
-		spdlog::error("Failed to write to printer: {}", printerName);
+	HDC hdc = CreateDC(NULL, printerName.c_str(), NULL, NULL);
+	if (!hdc) {
+		spdlog::error("Fallo en crear el contexto de dispositivo para la impresora: {}", printerName);
 		EndPagePrinter(hPrinter);
 		EndDocPrinter(hPrinter);
 		ClosePrinter(hPrinter);
 		return false;
 	}
 
-	EndPagePrinter(hPrinter);
-	EndDocPrinter(hPrinter);
+	if (StartDoc(hdc, &docInfo) == 0) {
+		spdlog::error("Fallo al iniciar el documento en la impresora: {}", printerName);
+		ClosePrinter(hPrinter);
+		return false;
+	}
+	StartPage(hdc);
+	Graphics* graphics = new Graphics(hdc);
+	Image image(std::wstring(imagePath.begin(), imagePath.end()).c_str());
+
+	if (graphics->DrawImage(&image, 0, 0) != Ok) {
+		spdlog::error("Failed to draw image on printer: {}", printerName);
+		DeleteDC(hdc);
+		EndPage(hdc);
+		EndDoc(hdc);
+		ClosePrinter(hPrinter);
+		delete(graphics);
+		return false;
+	}
+	delete(graphics);
+	EndPage(hdc);
+	EndDoc(hdc);
+	DeleteDC(hdc);
 	ClosePrinter(hPrinter);
+	GdiplusShutdown(gdiplusToken);
+
 
 	return true;
 }
+
 
 void handle_print_request(http_request request) {
 	if (request.headers().content_type() != U("text/plain")) {
@@ -103,14 +109,7 @@ void handle_print_request(http_request request) {
 			std::string nombre_impresora = findZebraPrinter();
 			std::cout << nombre_impresora << std::endl;
 			if (!nombre_impresora.empty()) {
-				// Imprime imagen 
-				cv::Mat img = cv::imread(nombre_archivo, cv::IMREAD_GRAYSCALE);
-				if (img.empty()) {
-					spdlog::warn("Error al leer la imágen");
-				}
-
-				std::string zpl = imageToZpl(img);
-				bool status = printZplToPrinter(nombre_impresora, zpl);
+				bool status = printImageToPrinter(nombre_impresora, nombre_archivo);
 				if (status) {
 					//Elimina la imagen
 					if (std::filesystem::remove(nombre_archivo))
@@ -142,6 +141,7 @@ void handle_print_request(http_request request) {
 }
 
 int main() {
+	GdiplusInitializer gdiplusInitializer;
 	rotate_spdlog();
 	uri_builder uri(U("http://*:3000")); // Listen on all available network interfaces
 	auto addr = uri.to_uri().to_string();

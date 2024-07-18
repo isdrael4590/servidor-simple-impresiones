@@ -20,9 +20,7 @@ class ImpresionesReceta(ConanFile):
 
     def requirements(self):
         self.requires("cpprestsdk/2.10.19")
-        self.requires("opencv/4.10.0")
         self.requires("boost/1.83.0")
-        self.requires("libusb/1.0.26")
         self.requires("spdlog/1.14.1")
 
     #def layout(self):
