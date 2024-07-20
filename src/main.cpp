@@ -65,10 +65,39 @@ bool printImageToPrinter(const std::string& printerName, const std::string& imag
 		return false;
 	}
 	StartPage(hdc);
+	// Get the printable area of the printer
+	int printerWidth = GetDeviceCaps(hdc, HORZRES);
+	int printerHeight = GetDeviceCaps(hdc, VERTRES);
 	Graphics* graphics = new Graphics(hdc);
+	graphics->SetPageUnit(UnitPixel);
+	graphics->SetPageScale(1.0);  // Force to t
 	Image image(std::wstring(imagePath.begin(), imagePath.end()).c_str());
 
-	if (graphics->DrawImage(&image, 0, 0) != Ok) {
+	// Get the size of the image
+	int imageWidth = image.GetWidth();
+	int imageHeight = image.GetHeight();
+	// Calculate the aspect ratios
+	double printerAspectRatio = static_cast<double>(printerWidth) / static_cast<double>(printerHeight);
+	double imageAspectRatio = static_cast<double>(imageWidth) / static_cast<double>(imageHeight);
+
+	// Determine the scaling factors
+	double scaleFactor;
+	if (imageAspectRatio > printerAspectRatio) {
+		scaleFactor = static_cast<double>(printerWidth) / static_cast<double>(imageWidth);
+	}
+	else {
+		scaleFactor = static_cast<double>(printerHeight) / static_cast<double>(imageHeight);
+	}
+
+	// Calculate the new dimensions of the image
+	int newImageWidth = static_cast<int>(imageWidth * scaleFactor);
+	int newImageHeight = static_cast<int>(imageHeight * scaleFactor);
+	// Calculate the position to center the image on the page
+	int xOffset = (printerWidth - newImageWidth) / 2;
+	int yOffset = (printerHeight - newImageHeight) / 2;
+	spdlog::info("newImageWidth: {}, newImageHeight: {}, xOffset: {}, yOffset: {}", newImageWidth, newImageHeight, xOffset, yOffset);
+
+	if (graphics->DrawImage(&image, xOffset, yOffset, newImageWidth, newImageHeight) != Ok) {
 		spdlog::error("Failed to draw image on printer: {}", printerName);
 		DeleteDC(hdc);
 		EndPage(hdc);
