@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_executable (servidor-simple-impresiones "main.cpp" "main.h" "check_printer.h" "check_printer.cpp" "pch.h" "logger.h")
+add_executable (servidor-simple-impresiones "main.cpp" "main.h" "check_printer.h" "check_printer.cpp" "pch.h" "logger.h" "Service.h" "Service.cpp")
 
 target_precompile_headers(servidor-simple-impresiones PUBLIC "pch.h")
 
