@@ -14,6 +14,10 @@ public:
             auto logger = std::make_shared<spdlog::logger>("multi_sink", begin(sinks), end(sinks));
             spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
             spdlog::set_level(spdlog::level::info);
+            spdlog::flush_on(spdlog::level::info); // Flush on each info or higher log entry
+
+            // Set flush interval to 1 second
+            spdlog::flush_every(std::chrono::seconds(1));
             spdlog::set_default_logger(logger);
             spdlog::info("Logger inicializado");
         }
