@@ -122,51 +122,46 @@ void handle_print_request(http_request request) {
 	if (request.headers().content_type() != U("text/plain")) {
 		request.reply(status_codes::NotImplemented, U("Tipo de dato no implementado aún, por favor requiera asistencia"));
 	}
-	request.extract_string().then([=](utility::string_t base64_string) {
-		try {
-			// Decodificar la cadena en base64
-			auto decoded_data = utility::conversions::from_base64(base64_string);
-			// Convertir a un vector de bytes
-			std::vector<unsigned char> byte_array(decoded_data.begin(), decoded_data.end());
+	// Create a file to save the uploaded file
+	auto fileStream = std::make_shared<concurrency::streams::ostream>();
 
-			// Guardar el archivo
-			// TODO: Guardar con el tipo y nombre de dato especificado desde PHP
-			std::ofstream out_file(nombre_archivo, std::ios::binary);
-			out_file.write(reinterpret_cast<const char*>(byte_array.data()), byte_array.size());
-			out_file.close();
+	// Open a file stream to write the file
+	pplx::task<void> requestTask = concurrency::streams::fstream::open_ostream(U("uploaded_file.pdf"))
+		.then([=](concurrency::streams::ostream outFile)
+			{
+				*fileStream = outFile;
 
-			spdlog::info("Imagen guardada como {}", nombre_archivo);
-			std::string nombre_impresora = findZebraPrinter();
-			if (!nombre_impresora.empty()) {
-				bool status = printImageToPrinter(nombre_impresora, nombre_archivo);
-				if (status) {
-					//Elimina la imagen
-					if (std::filesystem::remove(nombre_archivo))
-						spdlog::warn("Imagen {} eliminada.", nombre_archivo);
-					else
-						spdlog::warn("Imagen {} no eliminada ", nombre_archivo);
-					request.reply(status_codes::OK, U("Imagen correctamente recibida e impresa."));
+				// Read the request body (which should contain the file data)
+				return request.body().read_to_end(fileStream->streambuf());
+			})
+		.then([=](size_t)
+			{
+				return fileStream->close();
+			})
+		.then([=](pplx::task<void> previousTask)
+			{
+				try
+				{
+					previousTask.get();
+					spdlog::info("File saved successfully");
+					request.reply(status_codes::OK, U("File saved successfully"));
 				}
-				else {
-					request.reply(status_codes::OK, U("Imagen correctamente recibida, guardada pero tiene que imprimir manualmente."));
+				catch (const std::exception& e)
+				{
+					request.reply(status_codes::InternalError, U("Failed to save the file"));
+					spdlog::info("Failed to save the file");
+					std::wcout << L"Error: " << e.what() << std::endl;
 				}
-			}
-			else
-				request.reply(status_codes::ExpectationFailed, U("Impresora Zebra no conectada."));
-
-		}
-		catch (const std::exception& e) {
-			ucout << U("Error decodificando la cadena caracteres: ") << e.what() << std::endl;
-			request.reply(status_codes::BadRequest, U("Cadena de caracteres de base64 invalida."));
-		}
-		}).then([](pplx::task<void> t) {
-			try {
-				t.get();
-			}
-			catch (const std::exception& e) {
-				ucout << U("Error externo: ") << e.what() << std::endl;
-			}
 			});
+
+	try
+	{
+		requestTask.wait();
+	}
+	catch (const std::exception& e)
+	{
+		std::wcout << L"Error: " << e.what() << std::endl; // TODO: Revisar error aquí
+	}
 }
 
 int main() {
