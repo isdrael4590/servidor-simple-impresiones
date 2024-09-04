@@ -6,6 +6,7 @@
 - [Python](https://www.python.org/) >= 3.10
 - [CPPRest](https://microsoft.github.io/cpprestsdk/index.html)
 - [CMake](https://cmake.org/) >= 3.8
+- [Ghostscript AGPL](https://www.ghostscript.com/releases/gsdnld.html) >= 10.03.1
 
 ## Hardware
 
@@ -17,6 +18,7 @@
 
 ## Instrucciones
 
+- Descargue el programa Ghostscript AGPL a través de la siguiente [página](https://www.ghostscript.com/releases/gsdnld.html)
 - Descargue el [driver](https://www.zebra.com/la/es/support-downloads/printers/desktop/zd421.html) de la impresora Zebra a su disposición.
 - Instalelo en su computador y seleccione que la conexión sea por USB
 - Asegúrese que su impresora se encuentre encendidad y conectada.
