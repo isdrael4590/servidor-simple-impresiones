@@ -9,16 +9,24 @@ using namespace web::http;
 using namespace web::http::experimental::listener;
 using namespace utility;
 
+// Directorio base para guardar los archivos recibidos
+const std::wstring BASE_DIR = L"etiquetas"; 
 
 void handle_print_request(http_request request) {
 	if (request.headers().content_type() != U("text/plain")) {
 		request.reply(status_codes::NotImplemented, U("Tipo de dato no implementado aún, por favor requiera asistencia"));
 	}
-	std::wcout << L"Received POST request" << std::endl;
 
+	// Crear subcarpetas con la fecha actual
+	std::wstring timeFolder = get_current_time_folder();
+	std::wstring folderPath = BASE_DIR + L"\\" + timeFolder;
+	std::filesystem::create_directory(folderPath);
+	spdlog::info("Archivo recibido va a ser guardado en la siguiente carpeta: {}", std::filesystem::path(folderPath).string());
+	std::wstring filePath = folderPath + L"\\uploaded_file.pdf";
+	
 	auto fileStream = std::make_shared<concurrency::streams::ostream>();
 
-	pplx::task<void> requestTask = concurrency::streams::fstream::open_ostream(U("uploaded_file.pdf"))
+	pplx::task<void> requestTask = concurrency::streams::fstream::open_ostream(filePath)
 		.then([=](concurrency::streams::ostream outFile)
 			{
 				*fileStream = outFile;
@@ -35,13 +43,11 @@ void handle_print_request(http_request request) {
 				{
 					previousTask.get();
 
-					// Print the PDF file
-					std::wstring filePath = L"uploaded_file.pdf";
 					std::string nombre_impresora = findZebraPrinter();
 					if (!nombre_impresora.empty()) {
 						std::vector<std::string> imagePaths;
 						convert_pdf_to_images(filePath, imagePaths);
-						// Print each image
+						// Imprimir cada imagen
 						for (const auto& imagePath : imagePaths)
 						{
 							printImageToPrinter(nombre_impresora, imagePath);
@@ -75,6 +81,11 @@ int main() {
 	auto addr = uri.to_uri().to_string();
 	http_listener listener(addr);
 	listener.support(methods::POST, handle_print_request);
+	if (!std::filesystem::exists(BASE_DIR))
+	{
+		spdlog::info("Creando el directorio base para guardar las imágenes: {}", std::filesystem::path(BASE_DIR).string());
+		std::filesystem::create_directory(BASE_DIR);
+	}
 
 	try {
 		listener

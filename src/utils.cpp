@@ -92,19 +92,20 @@ bool printImageToPrinter(const std::string& printerName, const std::string& imag
 
 void convert_pdf_to_images(const std::wstring& pdfPath, std::vector<std::string>& imagePaths)
 {
-    std::wcout << L"Converting PDF to images..." << std::endl;
-
-    std::wstring outputPattern = L"output_page_%03d.png";
-    std::wstring command = L"gswin64c -dBATCH -dNOPAUSE -sDEVICE=png16m -r300 -sOutputFile=" + outputPattern + L" " + pdfPath;
+    spdlog::debug("Convirtiendo PDF a imágenes...");
+	auto path_pdf = std::filesystem::path(pdfPath);
+	
+	std::string outputPattern = std::format("{}\\output_page_%03d.png", path_pdf.parent_path().string());
+	std::wstring outputPattern_w(outputPattern.begin(), outputPattern.end());
+    std::wstring command = L"gswin64c -dBATCH -dNOPAUSE -sDEVICE=png16m -r1200 -sOutputFile=" + outputPattern_w + L" " + pdfPath;
 
     _wsystem(command.c_str());
 
-    std::filesystem::path current_path = std::filesystem::current_path();
+    std::filesystem::path ruta_imagenes = path_pdf.parent_path();
 
-    for (const auto& entry : std::filesystem::directory_iterator(current_path)) {
+    for (const auto& entry : std::filesystem::directory_iterator(ruta_imagenes)) {
         if (entry.is_regular_file() && entry.path().extension() == ".png") {
-            imagePaths.push_back(std::filesystem::relative(entry.path(), current_path).string());
-            std::cout << std::filesystem::relative(entry.path(), current_path).string() << std::endl;
+            imagePaths.push_back(entry.path().string());
         }
     }
     spdlog::info("Convertidas {} images del PDF", imagePaths.size());
@@ -112,7 +113,7 @@ void convert_pdf_to_images(const std::wstring& pdfPath, std::vector<std::string>
 
 void delete_old_folders(const std::wstring& baseDir, int days)
 {
-    std::wcout << L"Deleting folders older than " << days << " days..." << std::endl;
+	spdlog::info("Deleting folders older than {} days...", days);
 
     auto now = std::filesystem::file_time_type::clock::now();
     auto ageLimit = now - std::chrono::hours(days * 24);
@@ -125,7 +126,7 @@ void delete_old_folders(const std::wstring& baseDir, int days)
             if (ftime < ageLimit)
             {
                 std::filesystem::remove_all(entry);
-                std::wcout << L"Deleted folder: " << entry.path().wstring() << std::endl;
+				spdlog::info("Deleted folder: {}", entry.path().string());
             }
         }
     }
