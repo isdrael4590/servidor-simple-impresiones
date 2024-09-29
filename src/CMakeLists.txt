@@ -19,3 +19,20 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 install(TARGETS servidor-simple-impresiones DESTINATION bin)
+
+# To install, for example, MSVC runtime libraries:
+if (MSVC)
+	include(InstallRequiredSystemLibraries)
+	set(CPACK_SOURCE_GENERATOR "TGZ")
+elseif (UNIX)
+	set(CPACK_SOURCE_GENERATOR "DEB")
+endif (MSVC)
+
+# To install other/non-system 3rd party required libraries:
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/FixBundle.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/FixBundle.cmake
+  @ONLY
+)
+
+install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/FixBundle.cmake)

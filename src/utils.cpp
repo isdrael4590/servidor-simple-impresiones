@@ -47,8 +47,6 @@ bool printImageToPrinter(const std::string& printerName, const std::string& imag
 	// Get the size of the image
 	int imageWidth = image.GetWidth();
 	int imageHeight = image.GetHeight();
-	spdlog::info("imageWidth: {}, imageHeight: {}", imageWidth, imageHeight);
-	spdlog::info("printerWidth: {}, printerHeight: {}", printerWidth, printerHeight);
 
 
 	// Calculate the aspect ratios
@@ -67,13 +65,13 @@ bool printImageToPrinter(const std::string& printerName, const std::string& imag
 	// Calculate the new dimensions of the image
 	int newImageWidth = static_cast<int>(imageWidth * scaleFactor);
 	int newImageHeight = static_cast<int>(imageHeight * scaleFactor);
+
 	// Calculate the position to center the image on the page
 	int xOffset = (printerWidth - newImageWidth) / 2;
 	int yOffset = (printerHeight - newImageHeight) / 2;
-	spdlog::info("newImageWidth: {}, newImageHeight: {}, xOffset: {}, yOffset: {}", newImageWidth, newImageHeight, xOffset, yOffset);
 
 	if (graphics->DrawImage(&image, xOffset, yOffset, newImageWidth, newImageHeight) != Ok) {
-		spdlog::error("Failed to draw image on printer: {}", printerName);
+		spdlog::error("Fallo en graficar la imagen en la impresora: {}", printerName);
 		DeleteDC(hdc);
 		EndPage(hdc);
 		EndDoc(hdc);

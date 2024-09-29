@@ -18,9 +18,9 @@
 
 ## Instrucciones
 
-- Descargue el programa Ghostscript AGPL a través de la siguiente [página](https://www.ghostscript.com/releases/gsdnld.html)
+- Descargue e instale programa Ghostscript AGPL a través de la siguiente [página](https://www.ghostscript.com/releases/gsdnld.html)
 - Descargue el [driver](https://www.zebra.com/la/es/support-downloads/printers/desktop/zd421.html) de la impresora Zebra a su disposición.
-- Instalelo en su computador y seleccione que la conexión sea por USB
+- Instálelo en su computador y seleccione que la conexión sea por USB
 - Asegúrese que su impresora se encuentre encendidad y conectada.
 
 ### Configuración de la impresora de etiquetas
@@ -37,7 +37,7 @@ _Nota: Estas configuraciones son las recomendadas, para este proyecto en modo im
 
 #### Configuración de la página
 
-- Seleccionar el ancho y alto de la etiqueta que tiene a mano en pulgadas, por ejemplo 2.28"x1.575" para las teiquetas
+- Seleccionar el ancho y alto de la etiqueta que tiene a mano en pulgadas, por ejemplo 2.28"x1.575" para las etiquetas
 - Seleccionar el tipo de Medio como: "Etiquetas con espacios"
 - Elegir la rotación como: "0º - Formato Vertical"
 
