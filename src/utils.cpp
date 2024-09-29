@@ -48,6 +48,8 @@ bool printImageToPrinter(const std::string& printerName, const std::string& imag
 	int imageWidth = image.GetWidth();
 	int imageHeight = image.GetHeight();
 	spdlog::info("imageWidth: {}, imageHeight: {}", imageWidth, imageHeight);
+	spdlog::info("printerWidth: {}, printerHeight: {}", printerWidth, printerHeight);
+
 
 	// Calculate the aspect ratios
 	double printerAspectRatio = static_cast<double>(printerWidth) / static_cast<double>(printerHeight);

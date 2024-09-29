@@ -13,8 +13,21 @@ using namespace utility;
 const std::wstring BASE_DIR = L"etiquetas"; 
 
 void handle_print_request(http_request request) {
-	if (request.headers().content_type() != U("text/plain")) {
+	auto tipo_dato = request.headers().content_type();
+	if (tipo_dato != U("text/plain"))
+		spdlog::debug("Recibiendo una cadena de caracteres plana");
+	else if(tipo_dato.find(U("multipart/form-data")) != utility::string_t::npos)
+		spdlog::debug("Recibiendo un archivo desde una forma");
+	else{
 		request.reply(status_codes::NotImplemented, U("Tipo de dato no implementado aún, por favor requiera asistencia"));
+		spdlog::error("Tipo de dato no implementado " + utility::conversions::to_utf8string(tipo_dato) + " requiera asistencia");
+		return;
+	}
+
+	std::string nombre_impresora = findZebraPrinter();
+	if (nombre_impresora.empty()) {
+		request.reply(status_codes::ExpectationFailed, U("La impresora no está lista para imprimir o no está conectada"));
+		return;
 	}
 
 	// Crear subcarpetas con la fecha actual
@@ -43,19 +56,14 @@ void handle_print_request(http_request request) {
 				{
 					previousTask.get();
 
-					std::string nombre_impresora = findZebraPrinter();
-					if (!nombre_impresora.empty()) {
-						std::vector<std::string> imagePaths;
-						convert_pdf_to_images(filePath, imagePaths);
-						// Imprimir cada imagen
-						for (const auto& imagePath : imagePaths)
-						{
-							printImageToPrinter(nombre_impresora, imagePath);
-						}
-						request.reply(status_codes::OK, U("Archivo guardado correctamente"));
+					std::vector<std::string> imagePaths;
+					convert_pdf_to_images(filePath, imagePaths);
+					// Imprimir cada imagen
+					for (const auto& imagePath : imagePaths)
+					{
+						printImageToPrinter(nombre_impresora, imagePath);
 					}
-					else
-						request.reply(status_codes::ExpectationFailed, U("Impresora Zebra no conectada."));
+					request.reply(status_codes::OK, U("Archivo guardado correctamente"));
 				}
 				catch (const std::exception& e)
 				{
