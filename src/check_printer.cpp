@@ -25,7 +25,12 @@ std::string findZebraPrinter() {
 			std::string(pinfo[i].pPrinterName).find("ZD421") != std::string::npos) {
 			std::string printerName = pinfo[i].pPrinterName;
 			free(pinfo);
-			spdlog::info("Zebra ZD421 esta conectada");
+			spdlog::info("Encontrata impresora compatible {}", printerName);
+			if (pinfo[i].Status == PRINTER_STATUS_SERVER_UNKNOWN || pinfo[i].Status == PRINTER_STATUS_OFFLINE)
+			{
+				spdlog::warn("La impresora no esta conectada");
+				printerName = "";
+			}
 			return printerName;
 		}
 	}
